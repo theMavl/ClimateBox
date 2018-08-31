@@ -1,0 +1,26 @@
+amqp==2.3.2
+billiard==3.5.0.4
+celery==4.2.0
+certifi==2018.4.16
+chardet==3.0.4
+coreapi==2.3.3
+coreschema==0.0.4
+Django<1.11, >=1.10
+django-filter==1.1.0
+django-macaddress==1.5.0
+djangorestframework==3.8.2
+gunicorn==19.6.0
+idna==2.7
+itypes==1.1.0
+Jinja2==2.10
+kombu==4.2.1
+Markdown==2.6.11
+MarkupSafe==1.0
+netaddr==0.7.19
+psycopg2==2.7.5
+pytz==2018.4
+redis==2.10.6
+requests==2.19.1
+uritemplate==3.0.0
+urllib3==1.23
+vine==1.1.4
