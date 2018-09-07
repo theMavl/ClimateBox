@@ -3,7 +3,7 @@ from datetime import timedelta, datetime
 from django.conf import settings
 from django.contrib import auth
 from django.contrib.admin.views.decorators import staff_member_required
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User, Group
 from django.db.models import Q
 from django.http import JsonResponse
@@ -15,10 +15,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from ClimateBox.settings import HUB_SECRET_KEY_LENGTH, DEVICE_DEFAULT_SLEEP_TIME
-from hub.models import Readout, Device, Alert, Log
+from hub.models import Readout, Device, Alert, Log, AverageReadout
 from hub.serializers import UserSerializer, GroupSerializer, ReadoutListSerializer, ReadoutCreateSerializer, \
     DeviceListSerializer, DeviceCreateSerializer, BatteryReadoutListSerializer, AlertListSerializer
-from hub.tasks import remove_old_alerts, check_devices, process_readout, async_send_mail
+from hub.tasks import remove_old_alerts, check_devices, process_readout, async_send_mail, async_generate_year_readouts, \
+    async_remove_all_readouts_from_location, calculate_averages
 
 
 @login_required
@@ -76,17 +77,20 @@ class ReadoutViewSet(viewsets.ModelViewSet):
         period = request.query_params.get('period', None)
 
         if period is None:
-            latest = Readout.objects.filter(location=location)
+            latest = Readout.objects.filter(Q(location=location) & Q(temp__isnull=False))
             if latest:
                 queryset = Readout.objects.filter(id=latest.first().id)
             else:
                 queryset = Readout.objects.none()
         else:
             start_date = datetime.now()
-            print(datetime.now())
             delta = periods[period]
             end_date = start_date - timedelta(days=delta)
-            queryset = Readout.objects.filter(Q(location=location) & Q(timestamp__range=[end_date, start_date]))
+            queryset = Readout.objects.filter(
+                Q(location=location) & Q(timestamp__range=[end_date, start_date]) & Q(temp__isnull=False))
+            if queryset.count() > 600:
+                queryset = AverageReadout.objects.filter(
+                Q(location=location) & Q(timestamp__range=[end_date, start_date]) & Q(temp__isnull=False))
 
         serializer = self.get_serializer(queryset, many=True)
 
@@ -182,6 +186,9 @@ class DeviceViewSet(viewsets.ModelViewSet):
             end_date = start_date - timedelta(days=delta)
             queryset = Readout.objects.filter(
                 Q(device_id=pk) & Q(timestamp__range=[end_date, start_date]))
+            if queryset.count() > 600:
+                queryset = AverageReadout.objects.filter(
+                    Q(device_id=pk) & Q(timestamp__range=[end_date, start_date]))
 
         serializer = self.get_serializer(queryset, many=True)
 
@@ -191,7 +198,8 @@ class DeviceViewSet(viewsets.ModelViewSet):
         key = self.request.data["key"]
         if not key == settings.hub_secret_key:
             print(request.META)
-            Log.objects.create(type='e', tag="device_registration", message="Attempt to register with bad key; " + str(request.META))
+            Log.objects.create(type='e', tag="device_registration",
+                               message="Attempt to register with bad key; " + str(request.META))
             return Response("Bad key", status=status.HTTP_403_FORBIDDEN)
 
         serializer = self.get_serializer(data=request.data)
@@ -266,6 +274,7 @@ class AlertViewSet(viewsets.ModelViewSet):
 
 
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def debug_interface(request):
     task = request.GET["task"]
     print(task)
@@ -275,5 +284,11 @@ def debug_interface(request):
         check_devices()
     elif task == '2':
         async_send_mail("LETTER", "Hey there!", 2, 1)
+    elif task == '3':
+        async_generate_year_readouts.delay(2, 2)
+    elif task == '4':
+        async_remove_all_readouts_from_location.delay(2)
+    elif task == '5':
+        calculate_averages.delay()
 
     return redirect('index')

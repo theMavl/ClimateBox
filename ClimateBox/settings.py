@@ -200,7 +200,7 @@ HUB_SECRET_KEY_LENGTH = 6
 
 # Default sleep time in ms
 DEVICE_DEFAULT_SLEEP_TIME = 300000  # 5 min
-DEVICE_NIGHT_SLEEP_TIME = 3600000  # 60 min
+DEVICE_NIGHT_SLEEP_TIME = 1800000  # 60 min
 
 # Building management email
 SERVICE_EMAIL = "HIDDEN"

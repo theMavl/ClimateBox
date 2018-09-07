@@ -22,7 +22,7 @@ class GroupSerializer(serializers.HyperlinkedModelSerializer):
 class ReadoutListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Readout
-        fields = ('timestamp', 'temp', 'CO2', 'humid', 'motion')
+        fields = ('timestamp', 'temp', 'CO2', 'humid')
 
 
 class ReadoutCreateSerializer(serializers.ModelSerializer):
@@ -33,7 +33,24 @@ class ReadoutCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Readout
-        fields = ('id', 'timestamp', 'device', 'charge', 'temp', 'CO2', 'humid', 'motion')
+        fields = ('id', 'timestamp', 'device', 'charge', 'temp', 'CO2', 'humid')
+
+    def validate(self, data):
+        import numbers
+        import math
+        if "temp" in data:
+            if math.isnan(data["temp"]):
+                raise serializers.ValidationError("Temperature should be a number")
+        if "charge" in data:
+            if math.isnan(data["charge"]):
+                raise serializers.ValidationError("Charge should be a number")
+        if "CO2" in data:
+            if math.isnan(data["CO2"]):
+                raise serializers.ValidationError("CO2 level should be a number")
+        if "humid" in data:
+            if math.isnan(data["temp"]):
+                raise serializers.ValidationError("Humidity should be a number")
+        return data
 
     @staticmethod
     def validate_device(value):

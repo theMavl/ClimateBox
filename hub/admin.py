@@ -1,10 +1,11 @@
 from django.contrib import admin, auth
-from .models import Location, Device, Readout, Alert, Log
+from .models import Location, Device, Readout, Alert, Log, AverageReadout
 
 admin.site.register(Location)
 admin.site.register(Readout)
 admin.site.register(Alert)
 admin.site.register(Log)
+admin.site.register(AverageReadout)
 
 admin.site.site_header = "ClimateBox Admin"
 admin.site.site_title = "ClimateBox"

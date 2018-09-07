@@ -79,8 +79,7 @@ class Device(models.Model):
                                           help_text="Принимать все запросы с этого устройства, игнорируя проверку "
                                                     "времени (ТОЛЬКО ДЛЯ ОБСЛУЖИВАНИЯ)",
                                           default=False)
-    last_readout = models.ForeignKey('Readout', related_name='readout', null=True, blank=True,
-                                     on_delete=models.SET_NULL)
+    #last_readout = models.ForeignKey('Readout', related_name='readout', null=True, blank=True, on_delete=models.SET_NULL)
     warning = models.IntegerField(default=0)
 
     def __str__(self):
@@ -113,16 +112,19 @@ class Readout(models.Model):
     temp = models.FloatField(null=True, blank=True)
     CO2 = models.FloatField(null=True, blank=True)
     humid = models.FloatField(null=True, blank=True)
-    motion = models.BooleanField(default=False)
 
     def __str__(self):
-        descr = "[%s] [%s] %s%s%s%s" % (
+        descr = "[%s] [%s] %s%s%s" % (
             self.timestamp, self.location, ("Температура: " + str(self.temp) + "°C " if self.temp is not None else ""),
             (" | Уровень C02: " + str(self.CO2) if self.CO2 is not None else ""),
-            (" | Влажность: " + str(self.humid) + "%" if self.humid is not None else ""),
-            (" | Движение: " + str(
-                self.motion) if self.device is not None and self.device.has_motion_sensor else ""))
+            (" | Влажность: " + str(self.humid) + "%" if self.humid is not None else ""))
         return descr
+
+    class Meta:
+        ordering = ('-timestamp',)
+
+
+class AverageReadout(Readout):
 
     class Meta:
         ordering = ('-timestamp',)
@@ -131,7 +133,7 @@ class Readout(models.Model):
 class Alert(models.Model):
     timestamp = models.DateTimeField(null=True)
     location = models.ForeignKey('Location', on_delete=models.CASCADE, null=True, blank=True)
-    readout = models.ForeignKey('Readout', on_delete=models.CASCADE, null=True, blank=True)
+    # readout = models.ForeignKey('Readout', on_delete=models.CASCADE, null=True, blank=True)
     message = models.TextField(null=True, blank=True)
     type_list = (
         ('t', 'Temperature alert'),
@@ -171,5 +173,5 @@ class Log(models.Model):
     message = models.TextField()
 
     def __str__(self):
-        return "%s %s [%s] %s" % (self.type.upper(), self.timestamp.strftime("%d.%m.%Y %H:%M:%S"), self.tag, self.message)
-
+        return "%s %s [%s] %s" % (
+        self.type.upper(), self.timestamp.strftime("%d.%m.%Y %H:%M:%S"), self.tag, self.message)
