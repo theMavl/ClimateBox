@@ -176,7 +176,6 @@ def process_readout(readout) -> int:
     else:
         alert = Alert.objects.filter(location=location, type='b')
         alert.delete()
-
     sync_alert = Alert.objects.filter(location=location, type='o')
     sync_alert.delete()
     return sleep_time
